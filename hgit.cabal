@@ -1,0 +1,56 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.36.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           hgit
+version:        0.1.0.0
+description:    Git Haskell Implementation
+homepage:       https://github.com/samahri/HGit#readme
+bug-reports:    https://github.com/samahri/HGit/issues
+author:         Sam Saud Almahri
+maintainer:     sam.salmahri@gmail.com
+copyright:      2024 Sam Saud Almahri
+license:        AGPL-3.0-only
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/samahri/HGit
+
+library
+  exposed-modules:
+      HGit.Cli
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+executable hgit
+  main-is: hgit-cli.hs
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      hgit
+    , base >=4.7 && <5
+  default-language: Haskell2010
+
+test-suite HGit-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_hgit
+  autogen-modules:
+      Paths_hgit
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      hgit
+    , base >=4.7 && <5
+  default-language: Haskell2010
