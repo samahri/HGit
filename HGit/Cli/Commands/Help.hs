@@ -7,7 +7,7 @@ import System.Console.CmdArgs.Explicit
 
 helpMode :: Mode RawOpts
 helpMode =
-  mainMode
+  (overrideDefaultMode "help")
     { modeNames = ["help"],
       modeHelp = "hgit Help Command"
     }

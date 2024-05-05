@@ -1,12 +1,13 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module HGit.Cli (main) where
+module HGit.Cli (main, mainMode) where
 
 import qualified Data.ByteString.Char8 as BS
 import Data.FileEmbed (embedFileRelative)
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, sortBy)
 import Data.Maybe
+import Data.Ord (Down (Down), comparing)
 import HGit.Cli.CliOptions
 import HGit.Cli.Commands
 import HGit.Cli.RawOptions
@@ -29,9 +30,14 @@ import System.Environment (getArgs)
 --   where
 --     upd msg x v = Right $ (msg, x) : v
 
+-- TODO: Have `hgit init` take a directory name as input
 main :: IO ()
 main = do
-  rawArgs <- getArgs
+  rawArgs' <- getArgs
+
+  -- all the flags are at the end of the list
+  let rawArgs = sortBy (comparing Down) rawArgs'
+
   cliOpts <- rawArgsToCliOpts rawArgs
   print cliOpts
   let cmd :: String
@@ -76,6 +82,31 @@ main = do
         | otherwise = error "should never be here"
 
   runHgit
+
+mainMode :: Mode RawOpts
+mainMode =
+  defaultMode
+    { modeNames = ["hgit CMD"],
+      modeArgs = ([], Just $ argsFlag "[ARGS]"),
+      modeHelp = "hgit main command line interface. Type \"hgit\" to list available commands",
+      modeGroupModes =
+        Group
+          { -- subcommands in the unnamed group, shown first:
+            groupUnnamed = [],
+            -- subcommands in named groups:
+            groupNamed = [],
+            -- subcommands handled but not shown in the help:
+            groupHidden = map fst builtinCommands
+          },
+      modeHelpSuffix = ["Examples:"],
+      modeCheck = Right,
+      modeReform = const Nothing,
+      modeExpandAt = True,
+      modeValue = def
+    }
+  where
+    argsFlag :: FlagHelp -> Arg RawOpts
+    argsFlag = flagArg (\s opts -> Right $ setopt "args" s opts)
 
 printCommandList :: IO ()
 printCommandList = (putStrLn . BS.unpack) ($(embedFileRelative "HGit/Commands.txt"))
