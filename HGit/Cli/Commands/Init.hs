@@ -2,25 +2,21 @@ module HGit.Cli.Commands.Init (initAction, initMode) where
 
 import Control.Monad (when)
 import Data.Functor ((<&>))
-import Data.List (find)
-import Data.Maybe (fromMaybe)
 import HGit.Cli.CliOptions
-import HGit.Cli.RawOptions (RawOpts (..))
+import HGit.Cli.RawOptions
 import System.Console.CmdArgs
-import System.Console.CmdArgs.Explicit (Mode (..), flagArg)
+import System.Console.CmdArgs.Explicit
 import System.Directory
 import System.Exit (exitSuccess)
 import System.IO
 
 initMode :: Mode RawOpts
 initMode =
-  (overrideDefaultMode "init")
+  (overrideDefaultMode "init" [])
     { modeNames = ["init"],
       modeHelp = "hgit Init Command",
-      modeArgs = ([], Just $ flagArg update "[<directory>]")
+      modeArgs = ([flagArg updateArg "[<file>]"], Nothing)
     }
-  where
-    update s opts = if null $ getArg opts then Right $ setopt "args" s opts else Left "Can only get one directory"
 
 initAction :: CliOpts -> IO ()
 initAction CliOpts {rawOpts = rawOpts_} = do
@@ -67,5 +63,3 @@ initAction CliOpts {rawOpts = rawOpts_} = do
   createDirectoryIfMissing False tagsFolder
 
 -- reusable; move to another module
-getArg :: RawOpts -> String
-getArg (RawOpts unRawOpts_) = snd $ fromMaybe ("", "") $ find (\(k, _) -> k == "args") unRawOpts_

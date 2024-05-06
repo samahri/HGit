@@ -7,7 +7,6 @@ import qualified Data.ByteString.Char8 as BS
 import Data.FileEmbed (embedFileRelative)
 import Data.List (isPrefixOf, sortBy)
 import Data.Maybe
-import Data.Ord (Down (Down), comparing)
 import HGit.Cli.CliOptions
 import HGit.Cli.Commands
 import HGit.Cli.RawOptions
@@ -16,27 +15,18 @@ import System.Console.CmdArgs
 import System.Console.CmdArgs.Explicit
 import System.Environment (getArgs)
 
--- arguments :: Mode [(String, String)]
--- arguments =
---   mode
---     "explicit"
---     []
---     "Explicit sample program"
---     (flagArg (upd "file") "FILE")
---     [ flagOpt "world" ["hello", "h"] (upd "world") "WHO" "World argument",
---       flagReq ["greeting", "g"] (upd "greeting") "MSG" "Greeting to give",
---       flagHelpSimple (("help", "") :)
---     ]
---   where
---     upd msg x v = Right $ (msg, x) : v
-
--- TODO: Have `hgit init` take a directory name as input
 main :: IO ()
 main = do
   rawArgs' <- getArgs
 
   -- all the flags are at the end of the list
-  let rawArgs = sortBy (comparing Down) rawArgs'
+  let customCompare :: String -> String -> Ordering
+      customCompare str1 str2
+        | "-" `isPrefixOf` str1 && not ("-" `isPrefixOf` str2) = GT
+        | not ("-" `isPrefixOf` str1) && "-" `isPrefixOf` str2 = LT
+        | otherwise = EQ
+      -- where isPrefixOf prefix str = prefix `isPrefixOf` str
+      rawArgs = sortBy customCompare rawArgs'
 
   cliOpts <- rawArgsToCliOpts rawArgs
   print cliOpts
@@ -86,27 +76,19 @@ main = do
 mainMode :: Mode RawOpts
 mainMode =
   defaultMode
-    { modeNames = ["hgit CMD"],
-      modeArgs = ([], Just $ argsFlag "[ARGS]"),
+    { modeNames = ["hgit"],
+      -- modeArgs = ([], Just $ argsFlag "[ARGS]"),
       modeHelp = "hgit main command line interface. Type \"hgit\" to list available commands",
       modeGroupModes =
-        Group
-          { -- subcommands in the unnamed group, shown first:
-            groupUnnamed = [],
-            -- subcommands in named groups:
-            groupNamed = [],
-            -- subcommands handled but not shown in the help:
-            groupHidden = map fst builtinCommands
+        defaultGroupModes
+          { groupHidden = map fst builtinCommands
           },
-      modeHelpSuffix = ["Examples:"],
-      modeCheck = Right,
-      modeReform = const Nothing,
-      modeExpandAt = True,
-      modeValue = def
+      modeGroupFlags =
+        defaultGroupFlags
+          { groupNamed = [("General Flags", [flagNone ["help", "h"] (setboolopt "help") "show general help (or after CMD, command help)"])]
+          }
+          -- modeHelpSuffix = ["Examples:"]
     }
-  where
-    argsFlag :: FlagHelp -> Arg RawOpts
-    argsFlag = flagArg (\s opts -> Right $ setopt "args" s opts)
 
 printCommandList :: IO ()
 printCommandList = (putStrLn . BS.unpack) ($(embedFileRelative "HGit/Commands.txt"))
