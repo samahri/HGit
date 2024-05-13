@@ -4,9 +4,8 @@ import Control.Monad (when)
 import Data.Functor ((<&>))
 import HGit.Cli.CliOptions
 import HGit.Cli.RawOptions
-import System.Console.CmdArgs
 import System.Console.CmdArgs.Explicit
-import System.Directory
+import System.Directory (createDirectoryIfMissing, doesPathExist, getCurrentDirectory)
 import System.Exit (exitSuccess)
 import System.IO
 

@@ -2,6 +2,7 @@ module HGit.Cli.Commands (findCommand, builtinCommands) where
 
 import Data.List (find)
 import HGit.Cli.CliOptions
+import HGit.Cli.Commands.CatFile
 import HGit.Cli.Commands.HashObject
 import HGit.Cli.Commands.Help
 import HGit.Cli.Commands.Init
@@ -15,5 +16,6 @@ builtinCommands :: [(Mode RawOpts, CliOpts -> IO ())]
 builtinCommands =
   [ (helpMode, helpAction),
     (initMode, initAction),
-    (hashObjectMode, hashObjectAction)
+    (hashObjectMode, hashObjectAction),
+    (catFileMode, catFileAction)
   ]
