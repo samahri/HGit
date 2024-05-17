@@ -24,7 +24,6 @@ initAction CliOpts {rawOpts = rawOpts_} = do
   let gitDirectory = currDir <> "/.git/"
       headFile = gitDirectory <> "/HEAD"
       configFile = gitDirectory <> "config"
-      indexFile = gitDirectory <> "index"
       objectsFolder = gitDirectory <> "objects/"
       infoFolder = objectsFolder <> "info/"
       packFolder = objectsFolder <> "pack/"
@@ -46,10 +45,6 @@ initAction CliOpts {rawOpts = rawOpts_} = do
   -- config
   handle2 <- openFile configFile WriteMode
   hClose handle2
-
-  -- index
-  handle3 <- openFile indexFile WriteMode
-  hClose handle3
 
   -- objects folder
   createDirectoryIfMissing False objectsFolder

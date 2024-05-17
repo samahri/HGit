@@ -1,20 +1,15 @@
 module HGit.Cli.Commands.HashObject (hashObjectMode, hashObjectAction) where
 
-import qualified Codec.Compression.Zlib as Zlib
 import Control.Monad (when)
-import qualified Crypto.Hash.SHA1 as SHA1
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Char8 as BC
-import qualified Data.ByteString.Lazy.Char8 as LBC
-import Data.Char (toLower)
 import Data.Functor ((<&>))
 import HGit.Cli.CliOptions
+import HGit.Cli.Commands.Utils
 import HGit.Cli.RawOptions
 import Safe.Exact (dropExact, takeExact)
 import System.Console.CmdArgs.Explicit
 import System.Directory
 import System.Exit (die, exitSuccess)
-import Text.Printf
 
 hashObjectMode :: Mode RawOpts
 hashObjectMode =
@@ -35,22 +30,17 @@ hashObjectAction CliOpts {rawOpts = rawOpts_} = do
   if isStdinPath
     then
       putStrLn "not implemented" >> exitSuccess
-    else
-      hashFile fileToHash toWriteFile
+    else do
+      store <- getStore fileToHash "blob"
+      let hashValue = hashStore store
+      putStrLn hashValue
+      -- when -w flag is passed, save the object in the database
+      when toWriteFile $ saveObjectToDatabase hashValue store
   where
     fileToHash = getArg rawOpts_
     notNull = not . null
     toWriteFile = boolopt "w" rawOpts_
     isStdinPath = boolopt "stdin-paths" rawOpts_
-
--- create a hash value for the file
-hashFile :: String -> Bool -> IO ()
-hashFile inputFile toWriteFile = do
-  store <- getStore inputFile
-  let hashValue = (byteStringToHex . SHA1.hash . BC.pack) store
-  putStrLn hashValue
-  -- when -w flag is passed, save the object in the database
-  when toWriteFile $ saveObjectToDatabase hashValue store
 
 saveObjectToDatabase :: String -> String -> IO ()
 saveObjectToDatabase hashValue store = do
@@ -64,14 +54,3 @@ saveObjectToDatabase hashValue store = do
   where
     folderName = takeExact 2 hashValue
     objectFileName = dropExact 2 hashValue
-
-getStore :: FilePath -> IO String
-getStore inputFile = do
-  fileContent <- readFile inputFile
-  pure ("blob " <> show (length fileContent) <> ['\0'] <> fileContent)
-
-compress :: String -> B.ByteString
-compress = B.toStrict . Zlib.compress . LBC.pack
-
-byteStringToHex :: B.ByteString -> [Char]
-byteStringToHex = map toLower . concatMap (printf "%02X") . B.unpack

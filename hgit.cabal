@@ -32,6 +32,8 @@ library
     , HGit.Cli.Commands.Init
     , HGit.Cli.Commands.HashObject
     , HGit.Cli.Commands.CatFile
+    , HGit.Cli.Commands.UpdateIndex
+    , HGit.Cli.Commands.Utils
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
@@ -42,6 +44,8 @@ library
     , directory
     , cryptohash-sha1
     , zlib
+    , unix
+    , time
   default-language: Haskell2010
 
 executable hgit
@@ -59,6 +63,9 @@ executable hgit
     , directory
     , cryptohash-sha1
     , zlib
+    , unix
+    , time
+    , split
   default-language: Haskell2010
 
 test-suite HGit-test

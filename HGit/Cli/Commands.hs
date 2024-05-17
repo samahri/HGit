@@ -6,6 +6,7 @@ import HGit.Cli.Commands.CatFile
 import HGit.Cli.Commands.HashObject
 import HGit.Cli.Commands.Help
 import HGit.Cli.Commands.Init
+import HGit.Cli.Commands.UpdateIndex
 import HGit.Cli.RawOptions
 import System.Console.CmdArgs.Explicit
 
@@ -17,5 +18,6 @@ builtinCommands =
   [ (helpMode, helpAction),
     (initMode, initAction),
     (hashObjectMode, hashObjectAction),
-    (catFileMode, catFileAction)
+    (catFileMode, catFileAction),
+    (updateIndexMode, updateIndexAction)
   ]
