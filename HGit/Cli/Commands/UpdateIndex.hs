@@ -15,9 +15,11 @@ import qualified Data.ByteString.Char8 as BC
 import Data.Functor ((<&>))
 import Data.List (intercalate)
 import Data.Time.Clock (NominalDiffTime)
+import Data.Time.Clock.POSIX (POSIXTime)
 import Data.Word (Word32, Word8)
 import HGit.Cli.CliOptions
 import HGit.Cli.Commands.Utils
+import HGit.Cli.Data.GitIndexV2Format
 import HGit.Cli.RawOptions
 import System.Console.CmdArgs.Explicit
 import System.Directory (getCurrentDirectory)
@@ -38,61 +40,64 @@ updateIndexMode =
 
 updateIndexAction :: CliOpts -> IO ()
 updateIndexAction CliOpts {rawOpts = rawOpts_} = do
-  currentDir <- getCurrentDirectory
   let isAddOpt = boolopt "add" rawOpts_
-      fileName = intercalate "/" [currentDir, getArg rawOpts_]
-      indexFile = intercalate "/" [currentDir, ".git", "index"]
+      fileName = getArg rawOpts_
 
+  indexFile <- getCurrentDirectory <&> (\currentDir -> intercalate "/" [currentDir, ".git", "index"])
   unless isAddOpt exitSuccess
-  print fileName
-  indexByteCode <- getIndexByteCode fileName
+  indexFileContent <- getIndexByteCode fileName
 
-  B.writeFile indexFile indexByteCode
+  B.writeFile indexFile (toByteString indexFileContent)
 
--- to write in index file: tree <contentLength>\NULL100644 blob <hash> <file_name>
-getFileHash :: FilePath -> IO String
-getFileHash file = getStore file "blob" <&> hashStore
-
-getIndexByteCode :: FilePath -> IO B.ByteString
+getIndexByteCode :: String -> IO GitIndexV2Format
 getIndexByteCode fileName = do
-  fileStatus <- getFileStatus fileName
-  store <- getStore fileName "blob"
-  let fileCtime = getFileCtime fileStatus
-      fileMtime = getFileMtime fileStatus
-      deviceNum = B.toStrict . toLazyByteString . word32BE . fromIntegral . deviceID $ fileStatus
-      inodeNum = B.toStrict . toLazyByteString . word32BE . fromIntegral . fileID $ fileStatus
-      filePerm = B.toStrict . toLazyByteString . word32BE . fromIntegral . fileMode $ fileStatus
-      ownerId = B.toStrict . toLazyByteString . word32BE . fromIntegral . fileOwner $ fileStatus
-      groupId = B.toStrict . toLazyByteString . word32BE . fromIntegral . fileGroup $ fileStatus
-      fSize = B.toStrict . toLazyByteString . word32BE . fromIntegral . fileSize $ fileStatus
-      sha1Id = SHA1.hash . BC.pack $ store
-      flags = B.pack $ numberTo12BitWord8List (length "testy") -- length fileName
-      filepath = BC.pack "testy"
-      padding = BC.pack $ replicate 5 '\0' -- TODO: variable padding length
-      indexChecksum = SHA1.hash $ indexFileHeader <> fileCtime <> fileMtime <> deviceNum <> inodeNum <> filePerm <> ownerId <> groupId <> fSize <> sha1Id <> flags <> filepath <> padding
+  indexEntries <- gitIndexEntries fileName
+  pure
+    GitIndexV2Format
+      { header_ = indexFileHeader,
+        entries_ = indexEntries,
+        extensions_ = Nothing,
+        checksum_ = SHA1.hash $ toByteString indexEntries
+      }
 
-  pure $ indexFileHeader <> fileCtime <> fileMtime <> deviceNum <> inodeNum <> filePerm <> ownerId <> groupId <> fSize <> sha1Id <> flags <> filepath <> padding <> indexChecksum
+gitIndexEntries :: String -> IO GitIndexEntries
+gitIndexEntries fileName = do
+  filePath <- getCurrentDirectory <&> (\currentDir -> intercalate "/" [currentDir, fileName])
+  fileStatus <- getFileStatus filePath
+  store <- getStore filePath "blob" -- similar to getFileHash
+  pure
+    GitIndexEntries
+      { ctime_ = getFileCtime fileStatus,
+        mtime_ = getFileMtime fileStatus,
+        dev_ = to32BitsByteString $ deviceID fileStatus,
+        ino_ = to32BitsByteString $ fileID fileStatus,
+        mode_ = to32BitsByteString $ fileMode fileStatus,
+        uid_ = to32BitsByteString $ fileOwner fileStatus,
+        gid_ = to32BitsByteString $ fileGroup fileStatus,
+        fsize_ = to32BitsByteString $ fileSize fileStatus,
+        objId_ = SHA1.hash . BC.pack $ store,
+        flags_ = B.pack $ numberTo12BitWord8List (length fileName),
+        fpath_ = BC.pack fileName,
+        padding_ = BC.pack $ replicate 5 '\0' -- TODO: variable padding length
+      }
+  where
+    to32BitsByteString :: (Integral a) => a -> B.ByteString
+    to32BitsByteString = B.toStrict . toLazyByteString . word32BE . fromIntegral
 
-getFileCtime :: FileStatus -> B.ByteString
-getFileCtime fileStat = upperBits <> lowerBits
+getFileCtime :: FileStatus -> (B.ByteString, B.ByteString)
+getFileCtime = getPosixTime statusChangeTimeHiRes
+
+getFileMtime :: FileStatus -> (B.ByteString, B.ByteString)
+getFileMtime = getPosixTime modificationTimeHiRes
+
+getPosixTime :: (FileStatus -> POSIXTime) -> FileStatus -> (B.ByteString, B.ByteString)
+getPosixTime xTimeFn fileStat = (upperBits, lowerBits)
   where
     posixTime :: Word32
-    posixTime = fst $ properFraction $ statusChangeTimeHiRes fileStat
+    posixTime = fst $ properFraction $ xTimeFn fileStat
 
     posixTimeDecimal :: NominalDiffTime
-    posixTimeDecimal = (* 10 ^ (9 :: Integer)) . snd . properFraction . statusChangeTimeHiRes $ fileStat
-
-    upperBits = B.toStrict . toLazyByteString . word32BE $ posixTime
-    lowerBits = B.toStrict . toLazyByteString . word32BE . truncate $ posixTimeDecimal
-
-getFileMtime :: FileStatus -> B.ByteString
-getFileMtime fileStat = upperBits <> lowerBits
-  where
-    posixTime :: Word32
-    posixTime = fst $ properFraction $ modificationTimeHiRes fileStat
-
-    posixTimeDecimal :: NominalDiffTime
-    posixTimeDecimal = (* 10 ^ (9 :: Integer)) . snd . properFraction . modificationTimeHiRes $ fileStat
+    posixTimeDecimal = (* 10 ^ (9 :: Integer)) . snd . properFraction . xTimeFn $ fileStat
 
     upperBits = B.toStrict . toLazyByteString . word32BE $ posixTime
     lowerBits = B.toStrict . toLazyByteString . word32BE . truncate $ posixTimeDecimal

@@ -27,6 +27,7 @@ library
       HGit.Cli
     , HGit.Cli.CliOptions
     , HGit.Cli.RawOptions
+    , HGit.Cli.Data.GitIndexV2Format
     , HGit.Cli.Commands
     , HGit.Cli.Commands.Help
     , HGit.Cli.Commands.Init
@@ -65,7 +66,6 @@ executable hgit
     , zlib
     , unix
     , time
-    , split
   default-language: Haskell2010
 
 test-suite HGit-test
