@@ -1,14 +1,10 @@
 module HGit.Cli.Commands.HashObject (hashObjectMode, hashObjectAction) where
 
 import Control.Monad (when)
-import qualified Data.ByteString as B
-import Data.Functor ((<&>))
 import HGit.Cli.CliOptions
 import HGit.Cli.Commands.Utils
 import HGit.Cli.RawOptions
-import Safe.Exact (dropExact, takeExact)
 import System.Console.CmdArgs.Explicit
-import System.Directory
 import System.Exit (die, exitSuccess)
 
 hashObjectMode :: Mode RawOpts
@@ -41,16 +37,3 @@ hashObjectAction CliOpts {rawOpts = rawOpts_} = do
     notNull = not . null
     toWriteFile = boolopt "w" rawOpts_
     isStdinPath = boolopt "stdin-paths" rawOpts_
-
-saveObjectToDatabase :: String -> String -> IO ()
-saveObjectToDatabase hashValue store = do
-  folderPath <- getCurrentDirectory <&> (<> "/.git/objects/" <> folderName)
-
-  let objectFilePath = folderPath <> "/" <> objectFileName
-      compressedData = compress store
-
-  createDirectoryIfMissing False folderPath
-  B.writeFile objectFilePath compressedData
-  where
-    folderName = takeExact 2 hashValue
-    objectFileName = dropExact 2 hashValue

@@ -2,6 +2,7 @@ module HGit.Cli.Commands.Utils
   ( getStore,
     hashStore,
     compress,
+    saveObjectToDatabase,
   )
 where
 
@@ -11,6 +12,9 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LBC
 import Data.Char (toLower)
+import Data.Functor ((<&>))
+import Safe.Exact (dropExact, takeExact)
+import System.Directory
 import Text.Printf (printf)
 
 getStore :: FilePath -> String -> IO String
@@ -27,3 +31,16 @@ compress = B.toStrict . Zlib.compress . LBC.pack
 
 byteStringToHex :: B.ByteString -> [Char]
 byteStringToHex = map toLower . concatMap (printf "%02X") . B.unpack
+
+saveObjectToDatabase :: String -> String -> IO ()
+saveObjectToDatabase hashValue store = do
+  folderPath <- getCurrentDirectory <&> (<> "/.git/objects/" <> folderName)
+
+  let objectFilePath = folderPath <> "/" <> objectFileName
+      compressedData = compress store
+
+  createDirectoryIfMissing False folderPath
+  B.writeFile objectFilePath compressedData
+  where
+    folderName = takeExact 2 hashValue
+    objectFileName = dropExact 2 hashValue

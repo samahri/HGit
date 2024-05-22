@@ -43,11 +43,22 @@ updateIndexAction CliOpts {rawOpts = rawOpts_} = do
   let isAddOpt = boolopt "add" rawOpts_
       fileName = getArg rawOpts_
 
-  indexFile <- getCurrentDirectory <&> (\currentDir -> intercalate "/" [currentDir, ".git", "index"])
-  unless isAddOpt exitSuccess
-  indexFileContent <- getIndexByteCode fileName
+      saveFiles :: IO ()
+      saveFiles = do
+        store <- getStore fileName "blob"
+        let blobHash = hashStore store
+        saveObjectToDatabase blobHash store
 
-  B.writeFile indexFile (toByteString indexFileContent)
+      writeToIndexFile :: IO ()
+      writeToIndexFile = do
+        indexFile <- getCurrentDirectory <&> (\currentDir -> intercalate "/" [currentDir, ".git", "index"])
+        indexFileContent <- getIndexByteCode fileName
+        B.writeFile indexFile (toByteString indexFileContent)
+
+  unless isAddOpt exitSuccess
+
+  saveFiles
+  writeToIndexFile
 
 getIndexByteCode :: String -> IO GitIndexV2Format
 getIndexByteCode fileName = do
