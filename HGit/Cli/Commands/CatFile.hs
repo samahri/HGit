@@ -4,12 +4,11 @@ module HGit.Cli.Commands.CatFile
   )
 where
 
-import qualified Codec.Compression.Zlib as Zlib
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as BSC
 import Data.Functor ((<&>))
 import HGit.Cli.CliOptions
 import HGit.Cli.RawOptions
+import HGit.Cli.Utils.Codec
 import Safe.Exact
 import System.Console.CmdArgs
 import System.Console.CmdArgs.Explicit
@@ -46,11 +45,8 @@ getObjectPath objHash = getCurrentDirectory <&> (<> "/.git/objects/" <> objFolde
     objFolder = takeExact 2 objHash
     objFile = dropExact 2 objHash
 
-readAndDecompress :: FilePath -> IO String -- use Text?
+readAndDecompress :: FilePath -> IO String
 readAndDecompress fp = BS.readFile fp <&> decompress
-  where
-    decompress :: BS.ByteString -> String
-    decompress = BSC.unpack . BS.toStrict . Zlib.decompress . BS.fromStrict
 
 getCatFileOpt :: RawOpts -> Maybe CatFileOpt
 getCatFileOpt rawOpts_

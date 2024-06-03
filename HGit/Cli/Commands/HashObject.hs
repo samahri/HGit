@@ -1,8 +1,9 @@
 module HGit.Cli.Commands.HashObject (hashObjectMode, hashObjectAction) where
 
-import Control.Monad (when)
+import Control.Monad (unless, when)
 import HGit.Cli.CliOptions
 import HGit.Cli.Commands.Utils
+import HGit.Cli.Data.Store
 import HGit.Cli.RawOptions
 import System.Console.CmdArgs.Explicit
 import System.Exit (die, exitSuccess)
@@ -27,13 +28,12 @@ hashObjectAction CliOpts {rawOpts = rawOpts_} = do
     then
       putStrLn "not implemented" >> exitSuccess
     else do
-      store <- getStore fileToHash "blob"
-      let hashValue = hashStore store
+      unless (notNull fileToHash) exitSuccess
+      (hashValue, store) <- calculateStoreAndHash fileToHash Blob
       putStrLn hashValue
       -- when -w flag is passed, save the object in the database
-      when toWriteFile $ saveObjectToDatabase hashValue store
+      when toWriteFile $ saveObjectToDatabase (hashValue, store)
   where
     fileToHash = getArg rawOpts_
-    notNull = not . null
     toWriteFile = boolopt "w" rawOpts_
     isStdinPath = boolopt "stdin-paths" rawOpts_

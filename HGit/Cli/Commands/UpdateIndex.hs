@@ -47,7 +47,7 @@ updateIndexAction CliOpts {rawOpts = rawOpts_} = do
       saveFiles = do
         store <- getStore fileName "blob"
         let blobHash = hashStore store
-        saveObjectToDatabase blobHash store
+        saveObjectToDatabase (blobHash, store)
 
       writeToIndexFile :: IO ()
       writeToIndexFile = do
