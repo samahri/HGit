@@ -4,16 +4,17 @@ module HGit.Cli.Commands.CatFile
   )
 where
 
+import Control.Monad (unless)
 import qualified Data.ByteString as BS
 import Data.Functor ((<&>))
 import HGit.Cli.CliOptions
 import HGit.Cli.RawOptions
-import HGit.Cli.Utils.Codec
+import HGit.Cli.Utils.Codec as HGitCodec
 import Safe.Exact
 import System.Console.CmdArgs
 import System.Console.CmdArgs.Explicit
-import System.Directory (getCurrentDirectory)
-import System.Exit (exitSuccess)
+import System.Directory (doesFileExist, getCurrentDirectory)
+import System.Exit (die, exitSuccess)
 
 data CatFileOpt = PrettyPrint | ObjTypePrint deriving (Show)
 
@@ -32,12 +33,18 @@ catFileMode =
 
 catFileAction :: CliOpts -> IO ()
 catFileAction CliOpts {rawOpts = rawOpts_} = do
-  objectPath <- getObjectPath (getArg rawOpts_)
+  unless hashIsValid (die $ "Invalid object name " <> objectHash)
+  objectPath <- getObjectPath objectHash
+  fileExists <- doesFileExist objectPath
+  unless fileExists $ die "could not read file"
   objectContent <- readAndDecompress objectPath
   case getCatFileOpt rawOpts_ of
     Just PrettyPrint -> putStr (dropWhile (/= '\0') objectContent)
     Just ObjTypePrint -> putStrLn (takeWhile (/= ' ') objectContent)
     Nothing -> exitSuccess
+  where
+    objectHash = getArg rawOpts_
+    hashIsValid = length objectHash == 40 && all (`elem` "0123456789abcdefABCDEF") objectHash
 
 getObjectPath :: String -> IO FilePath
 getObjectPath objHash = getCurrentDirectory <&> (<> "/.git/objects/" <> objFolder <> "/" <> objFile)

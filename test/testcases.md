@@ -77,3 +77,54 @@ when `hgit hash-object -w testy` is run, then
 - $CWD/.git/objects/3b/18e512dba79e4c8300dd08aeb37f8e728b8dad is created
 
 # `hgit cat-file`
+
+1. Given
+
+- $CWD/.git/objects/3b/18e512dba79e4c8300dd08aeb37f8e728b8dad exists, and
+- it has binary content "78 01 4B CA C9 4F 52 30 34 62 C8 48 CD C9 C9 57 28 CF 2F CA 49 E1 02 00 44 11 06 89"
+
+when `hgit cat-file -t 3b18e512dba79e4c8300dd08aeb37f8e728b8dad` is run, then "blob" is displayed in stdout
+
+2. when `hgit cat-file (-t|-p) <invalidHash>` then stdout produces an error
+   where
+
+- invalidHash is any hash not 40 char long or contains non-hexadecimal digits
+
+3. given $CWD/.git/objects/3b/18e512dba79e4c8300dd08aeb37f8e728b8dad doesn't exist
+   when `hgit cat-file (-t|-p) 3b18e512dba79e4c8300dd08aeb37f8e728b8dad` is run, then error is printed in stdout
+
+4. Given
+
+- $CWD/.git/objects/3b/18e512dba79e4c8300dd08aeb37f8e728b8dad exists, and
+- it has binary content "78 01 4B CA C9 4F 52 30 34 62 C8 48 CD C9 C9 57 28 CF 2F CA 49 E1 02 00 44 11 06 89"
+
+when `hgit cat-file -p 3b18e512dba79e4c8300dd08aeb37f8e728b8dad` is run, then "hello world" is displayed in stdout
+
+5. [test when the contents of the file is corrupted]
+
+# `hgit update-index`
+
+1. given
+
+- $CWD/.git exists
+- $CWD/testy exist
+- content of is $CWD/testy "hello world"
+
+when `hgit update-index --add testy` is run, then
+
+- $CWD/.git/index is created
+- $CWD/.git/objects/3b/18e512dba79e4c8300dd08aeb37f8e728b8dad is created if not already
+
+# `hgit write-tree`
+
+given
+
+- $CWD/.git exists
+- $CWD/testy exist
+- content of is $CWD/testy "hello world"
+- `hgit update-index --add testy` is executed
+
+when `hgit write-tree` is run, then
+
+- X is printed in stdout
+- $CWD/.git/objects/xx is created

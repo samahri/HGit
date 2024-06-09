@@ -1,8 +1,11 @@
 {-# LANGUAGE InstanceSigs #-}
 
 module HGit.Cli.Data.GitIndexV2Format
-  ( GitIndexV2Format (..),
+  ( GitIndexV2 (..),
     GitIndexEntries (..),
+    GitIndexHeader (..),
+    Dirc (..),
+    Version2 (..),
     toByteString,
   )
 where
@@ -10,8 +13,8 @@ where
 import qualified Data.ByteString as B
 import Data.Maybe (fromMaybe)
 
-data GitIndexV2Format = GitIndexV2Format
-  { header_ :: B.ByteString,
+data GitIndexV2 = GitIndexV2
+  { header_ :: GitIndexHeader,
     entries_ :: GitIndexEntries,
     extensions_ :: Maybe B.ByteString,
     checksum_ :: B.ByteString
@@ -33,6 +36,23 @@ data GitIndexEntries = GitIndexEntries
     padding_ :: B.ByteString
   }
   deriving (Show)
+
+data GitIndexHeader = GitIndexHeader Dirc Version2 Entries deriving (Show)
+
+instance ToByteString GitIndexHeader where
+  toByteString (GitIndexHeader dirc v2 entries) = toByteString dirc <> toByteString v2 <> B.pack [0, 0, 0, 1] -- could change
+
+data Dirc = Dirc deriving (Show)
+
+instance ToByteString Dirc where
+  toByteString Dirc = B.pack [68, 73, 82, 67]
+
+data Version2 = Version2 deriving (Show)
+
+instance ToByteString Version2 where
+  toByteString Version2 = B.pack [0, 0, 0, 2]
+
+type Entries = Int
 
 -- Look for an existing typeclass (Serialize?)
 class ToByteString a where
@@ -56,10 +76,10 @@ instance ToByteString GitIndexEntries where
       <> fpath_ entries
       <> padding_ entries
 
-instance ToByteString GitIndexV2Format where
-  toByteString :: GitIndexV2Format -> B.ByteString
+instance ToByteString GitIndexV2 where
+  toByteString :: GitIndexV2 -> B.ByteString
   toByteString gitIndex =
-    header_ gitIndex
+    toByteString (header_ gitIndex)
       <> toByteString (entries_ gitIndex)
       <> fromMaybe B.empty (extensions_ gitIndex)
       <> checksum_ gitIndex
