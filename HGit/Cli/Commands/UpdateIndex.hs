@@ -25,6 +25,7 @@ import HGit.Cli.RawOptions
 import System.Console.CmdArgs.Explicit
 import System.Directory (getCurrentDirectory)
 import System.Exit (exitSuccess)
+import System.IO
 import System.Posix.Files
 
 updateIndexMode :: Mode RawOpts
@@ -47,7 +48,8 @@ updateIndexAction CliOpts {rawOpts = rawOpts_} = do
   unless isAddOpt exitSuccess
 
   -- saveFiles
-  (blobHash, store) <- calculateStoreAndHash fileName Blob
+  handle <- openFile fileName ReadMode
+  (blobHash, store) <- calculateStoreAndHash handle Blob
   saveObjectToDatabase (blobHash, store)
 
   -- writeToIndexFile
@@ -74,7 +76,8 @@ gitIndexEntries :: String -> IO GitIndexEntries
 gitIndexEntries fileName = do
   filePath <- getCurrentDirectory <&> (\currentDir -> intercalate "/" [currentDir, fileName])
   fileStatus <- getFileStatus filePath
-  (_, store) <- calculateStoreAndHash fileName Blob
+  handle <- openFile fileName ReadMode
+  (_, store) <- calculateStoreAndHash handle Blob
   pure
     GitIndexEntries
       { ctime_ = getFileCtime fileStatus,

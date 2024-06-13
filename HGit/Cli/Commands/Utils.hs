@@ -15,13 +15,14 @@ import HGit.Cli.Data.Store
 import HGit.Cli.Utils.Codec (compress, createStore)
 import Safe.Exact (dropExact, takeExact)
 import System.Directory
+import System.IO (Handle, hGetContents')
 import Text.Printf (printf)
 
 type Hashcode = String
 
-calculateStoreAndHash :: FilePath -> StoreType -> IO (Hashcode, Store)
-calculateStoreAndHash inputFile storeType = do
-  store <- readFile inputFile <&> createStore storeType
+calculateStoreAndHash :: Handle -> StoreType -> IO (Hashcode, Store)
+calculateStoreAndHash handle storeType = do
+  store <- hGetContents' handle <&> createStore storeType
   pure (hashByteStringToHex store, store)
   where
     hashByteStringToHex :: Store -> [Char]

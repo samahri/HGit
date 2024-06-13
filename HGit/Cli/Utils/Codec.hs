@@ -8,7 +8,7 @@ where
 import qualified Codec.Compression.Zlib as Zlib
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LBC
-import HGit.Cli.Data.Store
+import HGit.Cli.Data.Store (Store, StoreType)
 
 createStore :: StoreType -> String -> Store
 createStore storeType fileContent = show storeType <> " " <> (show . length) fileContent <> ['\0'] <> fileContent

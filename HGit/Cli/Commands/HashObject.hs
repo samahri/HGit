@@ -7,6 +7,7 @@ import HGit.Cli.Data.Store
 import HGit.Cli.RawOptions
 import System.Console.CmdArgs.Explicit
 import System.Exit (die, exitSuccess)
+import System.IO (IOMode (ReadMode), openFile)
 
 hashObjectMode :: Mode RawOpts
 hashObjectMode =
@@ -29,7 +30,8 @@ hashObjectAction CliOpts {rawOpts = rawOpts_} = do
       putStrLn "not implemented" >> exitSuccess
     else do
       unless (notNull fileToHash) exitSuccess
-      (hashValue, store) <- calculateStoreAndHash fileToHash Blob
+      handle <- openFile fileToHash ReadMode
+      (hashValue, store) <- calculateStoreAndHash handle Blob
       putStrLn hashValue
       -- when -w flag is passed, save the object in the database
       when toWriteFile $ saveObjectToDatabase (hashValue, store)

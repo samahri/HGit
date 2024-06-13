@@ -119,12 +119,12 @@ when `hgit update-index --add testy` is run, then
 
 given
 
-- $CWD/.git exists
+- `hgit init` is executed
 - $CWD/testy exist
-- content of is $CWD/testy "hello world"
+- content of $CWD/testy is "hello world"
 - `hgit update-index --add testy` is executed
 
 when `hgit write-tree` is run, then
 
-- X is printed in stdout
-- $CWD/.git/objects/xx is created
+- da34c8e94b6666fe041e117eec514b87430db516 is printed in stdout
+- $CWD/.git/objects/da/34c8e94b6666fe041e117eec514b87430db516 is created
